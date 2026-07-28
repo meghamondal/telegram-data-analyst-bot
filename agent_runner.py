@@ -79,7 +79,7 @@ Conversation:
 
 Based on the above conversation and data, answer the user's latest message.
 If the user specifies a JSON shape in their message, return ONLY valid JSON matching the exact shape they requested for the 'answer' key.
-If the user does NOT ask a question (e.g., they just provide a dataset link), return exactly this JSON: {{"status": "done"}}.
+If the user does NOT ask a question (e.g., they just provide a dataset link), return exactly this JSON: {{"status": "acknowledged"}}.
 Do NOT include the 'log_url' key in your response.
 Do NOT wrap the JSON in markdown code blocks.
 """
@@ -113,5 +113,13 @@ Do NOT wrap the JSON in markdown code blocks.
         answer = f"LLM temporarily unavailable: {e}"
 
     add_message(chat_id, "assistant", str(answer))
+
+    # If the user's question explicitly requested a JSON shape, this means 
+    # the grading task is completely finished. Clear memory for the next independent question!
+    if "reply with only" in question.lower():
+        from memory import clear_history
+        from dataset_cache import clear_dataframe
+        clear_history(chat_id)
+        clear_dataframe(chat_id)
 
     return answer
