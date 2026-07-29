@@ -60,10 +60,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             question,
         )
 
-        response = {
-            "answer": answer,
-            "log_url": f"{BASE_URL}/run.jsonl",
-        }
+        # Only wrap in {"answer": ..., "log_url": ...} if the prompt explicitly asked for a log_url!
+        if "log_url" in question.lower():
+            response = {
+                "answer": answer,
+                "log_url": f"{BASE_URL}/run.jsonl",
+            }
+        else:
+            # Otherwise, just output the exact raw answer the question requested (e.g. {"state": "Assam"})
+            response = answer
 
 
         log_event(
