@@ -52,7 +52,7 @@ def dataframe_summary(df):
     """
     csv_data = df.to_csv(index=False)
     # truncate if it's too massive, e.g., > 100k chars to be safe for LLM context
-    limit = 15000 # Changed from 500000 to easily fit inside Groq's free limit
+    limit = 500000
     if len(csv_data) > limit:
         csv_data = csv_data[:limit] + "\n... (truncated)"
 
