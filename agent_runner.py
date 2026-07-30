@@ -114,9 +114,9 @@ Do NOT wrap the JSON in markdown code blocks.
 
     add_message(chat_id, "assistant", str(answer))
 
-    # If the user's question explicitly requested a JSON shape, this means 
-    # the grading task is completely finished. Clear memory for the next independent question!
-    if "reply with only" in question.lower():
+    # Mark the state as closed logically: if the AI provides a tangible answer 
+    # (not just an intermediate acknowledgement), the task is completely finished.
+    if isinstance(answer, dict) and answer.get("status") != "acknowledged":
         from memory import clear_history
         from dataset_cache import clear_dataframe
         clear_history(chat_id)
