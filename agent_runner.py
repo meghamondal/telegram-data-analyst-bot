@@ -79,14 +79,15 @@ Conversation:
 {context}
 
 Based on the above conversation and data, answer the user's latest message.
-If the user specifies a JSON shape in their message, you MUST output a valid JSON object matching the exact shape they requested.
-If the question requires calculating or filtering data (math, counting, etc), you MUST write a Python script to compute the exact answer instead of guessing.
-- The dataset is already loaded in memory as a pandas DataFrame named `df`.
-- You must store your final JSON answer dictionary into a variable named `final_answer`.
-- Output your Python code inside a ```python block. Do not output anything else.
-If no math is needed, just output the JSON answer directly.
-If the user does NOT ask a question (e.g., they just provide a dataset link), return exactly this JSON: {{"status": "acknowledged"}}.
-Do NOT include the 'log_url' key in your response.
+
+CRITICAL RULES:
+1. If the user's latest message ONLY provides a dataset link (e.g. "Here is a dataset: ...") and does NOT explicitly ask you to calculate or answer a specific question, you MUST return exactly this JSON and nothing else: {{"status": "acknowledged"}}
+2. If the user's message explicitly contains instructions to calculate, count, or provide a JSON object, you MUST provide the final answer!
+3. If the message requires calculating or filtering data, you MUST write a Python script to compute the exact answer instead of guessing.
+   - The dataset is already loaded in memory as a pandas DataFrame named `df`.
+   - You must store your final JSON answer dictionary into a variable named `final_answer`.
+   - Output your Python code inside a ```python block. Do not output anything else.
+4. Do NOT include the 'log_url' key in your response.
 """
 
     print("Using Gemini...")
