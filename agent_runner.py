@@ -1,4 +1,5 @@
 import re
+import pandas as pd
 
 from agent import ask_llm
 from memory import add_message, get_history
@@ -78,10 +79,14 @@ Conversation:
 {context}
 
 Based on the above conversation and data, answer the user's latest message.
-If the user specifies a JSON shape in their message, return ONLY valid JSON matching the exact shape they requested for the 'answer' key.
+If the user specifies a JSON shape in their message, you MUST output a valid JSON object matching the exact shape they requested.
+If the question requires calculating or filtering data (math, counting, etc), you MUST write a Python script to compute the exact answer instead of guessing.
+- The dataset is already loaded in memory as a pandas DataFrame named `df`.
+- You must store your final JSON answer dictionary into a variable named `final_answer`.
+- Output your Python code inside a ```python block. Do not output anything else.
+If no math is needed, just output the JSON answer directly.
 If the user does NOT ask a question (e.g., they just provide a dataset link), return exactly this JSON: {{"status": "acknowledged"}}.
 Do NOT include the 'log_url' key in your response.
-Do NOT wrap the JSON in markdown code blocks.
 """
 
     print("Using Gemini...")
@@ -91,23 +96,37 @@ Do NOT wrap the JSON in markdown code blocks.
         answer_text = ask_llm(prompt)
         print(f"Raw LLM output: {answer_text}")
         
-        # Clean markdown code blocks if any
-        if answer_text.startswith("```"):
-            lines = answer_text.strip().split("\n")
-            if lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines[-1].startswith("```"):
-                lines = lines[:-1]
-            answer_text = "\n".join(lines).strip()
+        # Check if the AI wrote a python script to calculate the answer
+        python_match = re.search(r"```python(.*?)```", answer_text, re.DOTALL)
+        
+        if python_match:
+            code = python_match.group(1).strip()
+            print("Executing AI Python code:\n", code)
+            local_vars = {"df": df, "pd": pd}
+            try:
+                exec(code, local_vars)
+                answer = local_vars.get("final_answer", {"error": "final_answer variable not found in code"})
+            except Exception as code_e:
+                print(f"AI Code Execution Failed: {code_e}")
+                answer = {"error": f"Failed to calculate answer: {code_e}"}
+        else:
+            # Clean markdown code blocks if any
+            if answer_text.startswith("```"):
+                lines = answer_text.strip().split("\n")
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines[-1].startswith("```"):
+                    lines = lines[:-1]
+                answer_text = "\n".join(lines).strip()
 
-        try:
-            answer = json.loads(answer_text)
-            # Some models output {"answer": {"capital": "Paris"}} 
-            # instead of just {"capital": "Paris"}. Let's unwrap it if they do!
-            if isinstance(answer, dict) and "answer" in answer and len(answer) == 1:
-                answer = answer["answer"]
-        except json.JSONDecodeError:
-            answer = answer_text
+            try:
+                answer = json.loads(answer_text)
+                # Some models output {"answer": {"capital": "Paris"}} 
+                # instead of just {"capital": "Paris"}. Let's unwrap it if they do!
+                if isinstance(answer, dict) and "answer" in answer and len(answer) == 1:
+                    answer = answer["answer"]
+            except json.JSONDecodeError:
+                answer = answer_text
 
     except Exception as e:
         answer = f"LLM temporarily unavailable: {e}"
