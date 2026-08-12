@@ -34,16 +34,15 @@ def load_dataframe(filepath: str):
     Load CSV or Excel.
     """
 
-    if filepath.endswith(".csv"):
+    if filepath.endswith(".xlsx") or filepath.endswith(".xls"):
+        return pd.read_excel(filepath)
+
+    # Default to CSV instead of crashing if the URL doesn't have a perfect .csv extension
+    try:
         return pd.read_csv(filepath)
-
-    if filepath.endswith(".xlsx"):
+    except Exception:
+        # If it fails as CSV, try excel just in case
         return pd.read_excel(filepath)
-
-    if filepath.endswith(".xls"):
-        return pd.read_excel(filepath)
-
-    raise ValueError(f"Unsupported file type: {filepath}")
 
 
 def dataframe_summary(df):
